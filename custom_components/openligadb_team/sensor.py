@@ -90,7 +90,6 @@ class PointsSensor(OpenLigaDBBaseSensor):
     _key = "points"
     _attr_translation_key = "points"
     _attr_icon = "mdi:counter"
-    _attr_native_unit_of_measurement = "Punkte"
 
     @property
     def native_value(self) -> int | None:
