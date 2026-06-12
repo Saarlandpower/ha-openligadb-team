@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "League",
+        "description": "Enter the OpenLigaDB league shortcut (e.g. bl1, bl2, bl3, dfb).",
+        "data": {
+          "league_shortcut": "League shortcut"
+        }
+      },
+      "team": {
+        "title": "Team",
+        "description": "Pick your team.",
+        "data": {
+          "team_id": "Team"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not connect to OpenLigaDB.",
+      "no_teams": "No teams found for this league shortcut."
+    },
+    "abort": {
+      "already_configured": "This team is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "position": { "name": "Table position" },
+      "points": { "name": "Points" },
+      "next_match": { "name": "Next match" },
+      "last_match": { "name": "Last match" },
+      "matches": { "name": "Matches" },
+      "table": { "name": "Table" }
+    }
+  }
+}

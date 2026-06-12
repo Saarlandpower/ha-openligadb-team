@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Liga",
+        "description": "OpenLigaDB-Liga-Kürzel eingeben (z.B. bl1, bl2, bl3, dfb).",
+        "data": {
+          "league_shortcut": "Liga-Kürzel"
+        }
+      },
+      "team": {
+        "title": "Verein",
+        "description": "Verein auswählen.",
+        "data": {
+          "team_id": "Verein"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Keine Verbindung zu OpenLigaDB möglich.",
+      "no_teams": "Keine Teams für dieses Liga-Kürzel gefunden."
+    },
+    "abort": {
+      "already_configured": "Dieser Verein ist bereits eingerichtet."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "position": { "name": "Tabellenplatz" },
+      "points": { "name": "Punkte" },
+      "next_match": { "name": "Nächstes Spiel" },
+      "last_match": { "name": "Letztes Spiel" },
+      "matches": { "name": "Spiele" },
+      "table": { "name": "Tabelle" }
+    }
+  }
+}
