@@ -56,6 +56,11 @@ class OpenLigaDBBaseSensor(CoordinatorEntity[OpenLigaDBCoordinator], SensorEntit
     def _data(self) -> dict[str, Any]:
         return self.coordinator.data or {}
 
+    @property
+    def entity_picture(self) -> str | None:
+        """Expose the team logo as the entity picture when available."""
+        return self._data.get("team_logo")
+
 
 class TablePositionSensor(OpenLigaDBBaseSensor):
     """Current table position."""
@@ -74,6 +79,7 @@ class TablePositionSensor(OpenLigaDBBaseSensor):
         row = self._data.get("team_row") or {}
         return {
             "season": self._data.get("season"),
+            "team_logo": self._data.get("team_logo"),
             "matches": row.get("matches"),
             "won": row.get("won"),
             "draw": row.get("draw"),
@@ -96,6 +102,10 @@ class PointsSensor(OpenLigaDBBaseSensor):
         row = self._data.get("team_row")
         return row.get("points") if row else None
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {"team_logo": self._data.get("team_logo")}
+
 
 class NextMatchSensor(OpenLigaDBBaseSensor):
     """Next scheduled match."""
@@ -113,7 +123,10 @@ class NextMatchSensor(OpenLigaDBBaseSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return self._data.get("next_match") or {}
+        return {
+            **(self._data.get("next_match") or {}),
+            "team_logo": self._data.get("team_logo"),
+        }
 
 
 class LastMatchSensor(OpenLigaDBBaseSensor):
@@ -132,7 +145,10 @@ class LastMatchSensor(OpenLigaDBBaseSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return self._data.get("last_match") or {}
+        return {
+            **(self._data.get("last_match") or {}),
+            "team_logo": self._data.get("team_logo"),
+        }
 
 
 class MatchesSensor(OpenLigaDBBaseSensor):
@@ -148,7 +164,10 @@ class MatchesSensor(OpenLigaDBBaseSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        return {"matches": self._data.get("matches") or []}
+        return {
+            "team_logo": self._data.get("team_logo"),
+            "matches": self._data.get("matches") or [],
+        }
 
 
 class TableSensor(OpenLigaDBBaseSensor):
@@ -166,5 +185,6 @@ class TableSensor(OpenLigaDBBaseSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         return {
             "season": self._data.get("season"),
+            "team_logo": self._data.get("team_logo"),
             "table": self._data.get("table") or [],
         }
