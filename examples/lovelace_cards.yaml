@@ -11,6 +11,14 @@
 #
 # You can find your actual entity ids in:
 #   Developer Tools -> States
+#
+# NOTE ON JINJA LOOPS IN MARKDOWN TABLES:
+# `{% for x in list %}\n| ... |\n{% endfor %}` looks fine but actually emits
+# a blank line between every row (the newline after `%}` plus the newline
+# before the next iteration's row). A blank line inside a pipe table breaks
+# table detection, so it silently falls back to raw text with visible "|"
+# characters. Fix: use `{% for x in list -%}` (note the trailing dash) to
+# strip that whitespace, so rows are joined directly by a single newline.
 
 ###############################################################################
 # 1) Compact team overview
@@ -104,12 +112,12 @@ title: Spielplan
 content: |
   | Datum | Spiel | Wettbewerb |
   |---|---|---|
-  {% for match in state_attr('sensor.1_fc_saarbrucken_spiele', 'matches') or [] %}
+  {% for match in state_attr('sensor.1_fc_saarbrucken_spiele', 'matches') or [] -%}
   | {{ as_timestamp(match.date_local) | timestamp_custom('%d.%m. %H:%M', true) if match.date_local else '-' }} | {% if match.finished %}{{ match.home }} {{ match.score or '' }} {{ match.away }}{% else %}{{ match.home }} - {{ match.away }}{% endif %} | {{ match.matchday or match.league or '-' }} |
   {% endfor %}
 
 ###############################################################################
-# 6) League table
+# 6) League table (with team crests)
 ###############################################################################
 
 ---
@@ -118,10 +126,10 @@ title: Tabelle
 content: |
   {% set entity = 'sensor.1_fc_saarbrucken_tabelle' %}
   ## Saison {{ state_attr(entity, 'season') }}/{{ (state_attr(entity, 'season') or 0) + 1 }}
-  | # | Team | Sp | TD | Pkt |
-  |---|---|---|---|---|
-  {% for row in state_attr(entity, 'table') or [] %}
-  | {{ row.position }} | {% if 'Saarbrücken' in row.team %}**{{ row.team }}**{% else %}{{ row.team }}{% endif %} | {{ row.matches }} | {{ row.goal_diff }} | **{{ row.points }}** |
+  | # | | Team | Sp | TD | Pkt |
+  |---|---|---|---|---|---|
+  {% for row in state_attr(entity, 'table') or [] -%}
+  | {{ row.position }} | <img src="{{ row.icon }}" width="22" height="22"> | {% if 'Saarbrücken' in row.team %}**{{ row.team }}**{% else %}{{ row.team }}{% endif %} | {{ row.matches }} | {{ row.goal_diff }} | **{{ row.points }}** |
   {% endfor %}
 
 ###############################################################################
