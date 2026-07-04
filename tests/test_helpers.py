@@ -17,6 +17,7 @@ SPEC.loader.exec_module(MODULE)
 pick_next_and_last_match = MODULE.pick_next_and_last_match
 slim_match = MODULE.slim_match
 normalize_team_name = MODULE.normalize_team_name
+find_team_logo_in_matches = MODULE.find_team_logo_in_matches
 
 
 def test_slim_match_extracts_relevant_fields() -> None:
@@ -91,3 +92,24 @@ def test_normalize_team_name_matches_across_competition_formatting() -> None:
 def test_normalize_team_name_is_case_insensitive() -> None:
     """Comparisons should not be sensitive to case."""
     assert normalize_team_name("Hertha BSC") == normalize_team_name("HERTHA bsc")
+
+
+def test_find_team_logo_in_matches_uses_matching_home_or_away_team() -> None:
+    """The configured team's logo should be found in match payloads."""
+    matches = [
+        {
+            "home": "SV Elversberg",
+            "away": "1. FC Saarbrücken",
+            "home_icon": "elv.png",
+            "away_icon": "fcs.png",
+        }
+    ]
+
+    assert find_team_logo_in_matches(matches, "1.FC Saarbrücken") == "fcs.png"
+
+
+def test_find_team_logo_in_matches_returns_none_without_match() -> None:
+    """Unknown teams should not accidentally pick another club's logo."""
+    matches = [{"home": "A", "away": "B", "home_icon": "a.png", "away_icon": "b.png"}]
+
+    assert find_team_logo_in_matches(matches, "C") is None
