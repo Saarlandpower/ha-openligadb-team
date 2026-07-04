@@ -14,7 +14,7 @@ DEFAULT_SCAN_INTERVAL_MINUTES = 15
 
 # Matches window for getmatchesbyteamid (weeks)
 WEEKS_PAST = 3
-WEEKS_FUTURE = 5
+WEEKS_FUTURE = 104  # weeks; effectively unbounded for scheduled fixtures (cup draws can be ~2 months out)
 
 
 def current_season(today: date | None = None) -> int:
