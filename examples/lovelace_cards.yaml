@@ -1,0 +1,133 @@
+# Lovelace examples for OpenLigaDB Team Tracker
+#
+# How to use:
+# 1. Open a Home Assistant dashboard
+# 2. Edit dashboard -> Add card -> Manual
+# 3. Paste one example below
+# 4. Replace the sample entity ids with your own team entities
+#
+# Sample entity prefix used in this file:
+#   sensor.1_fc_saarbrucken_*
+#
+# You can find your actual entity ids in:
+#   Developer Tools -> States
+
+###############################################################################
+# 1) Compact team overview
+###############################################################################
+
+---
+type: vertical-stack
+cards:
+  - type: entities
+    title: 1. FC Saarbrücken
+    show_header_toggle: false
+    entities:
+      - entity: sensor.1_fc_saarbrucken_tabellenplatz
+        name: Tabellenplatz
+      - entity: sensor.1_fc_saarbrucken_punkte
+        name: Punkte
+      - entity: sensor.1_fc_saarbrucken_nachstes_spiel
+        name: Nächstes Spiel
+      - entity: sensor.1_fc_saarbrucken_letztes_spiel
+        name: Letztes Spiel
+  - type: markdown
+    content: |
+      {% set pos = states('sensor.1_fc_saarbrucken_tabellenplatz') %}
+      {% set pts = states('sensor.1_fc_saarbrucken_punkte') %}
+      {% set played = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'matches') %}
+      {% set won = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'won') %}
+      {% set draw = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'draw') %}
+      {% set lost = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'lost') %}
+      {% set gd = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'goal_diff') %}
+      **Platz {{ pos }}** mit **{{ pts }} Punkten**
+
+      Bilanz: {{ won }}S / {{ draw }}U / {{ lost }}N
+      Spiele: {{ played }} | Tordifferenz: {{ gd }}
+
+###############################################################################
+# 2) Next match card
+###############################################################################
+
+---
+type: markdown
+title: Nächstes Spiel
+content: |
+  {% set entity = 'sensor.1_fc_saarbrucken_nachstes_spiel' %}
+  {% set kickoff = state_attr(entity, 'date_local') %}
+  {% set matchday = state_attr(entity, 'matchday') %}
+  {% set league = state_attr(entity, 'league') %}
+  {% set location = state_attr(entity, 'location') %}
+  ## {{ states(entity) }}
+
+  **Wettbewerb:** {{ league or '-' }}
+  **Spieltag/Runde:** {{ matchday or '-' }}
+  **Anstoß:** {{ as_timestamp(kickoff) | timestamp_custom('%d.%m.%Y %H:%M', true) if kickoff else '-' }}
+  **Ort:** {{ location or '-' }}
+
+###############################################################################
+# 3) Last match card
+###############################################################################
+
+---
+type: markdown
+title: Letztes Spiel
+content: |
+  {% set entity = 'sensor.1_fc_saarbrucken_letztes_spiel' %}
+  {% set kickoff = state_attr(entity, 'date_local') %}
+  {% set matchday = state_attr(entity, 'matchday') %}
+  {% set league = state_attr(entity, 'league') %}
+  ## {{ states(entity) }}
+
+  **Wettbewerb:** {{ league or '-' }}
+  **Spieltag/Runde:** {{ matchday or '-' }}
+  **Datum:** {{ as_timestamp(kickoff) | timestamp_custom('%d.%m.%Y %H:%M', true) if kickoff else '-' }}
+
+###############################################################################
+# 4) Match schedule list
+###############################################################################
+
+---
+type: markdown
+title: Spielplan
+content: |
+  | Datum | Spiel | Wettbewerb |
+  |---|---|---|
+  {% for match in state_attr('sensor.1_fc_saarbrucken_spiele', 'matches') or [] %}
+  | {{ as_timestamp(match.date_local) | timestamp_custom('%d.%m. %H:%M', true) if match.date_local else '-' }} | {% if match.finished %}{{ match.home }} {{ match.score or '' }} {{ match.away }}{% else %}{{ match.home }} - {{ match.away }}{% endif %} | {{ match.matchday or match.league or '-' }} |
+  {% endfor %}
+
+###############################################################################
+# 5) League table
+###############################################################################
+
+---
+type: markdown
+title: Tabelle
+content: |
+  {% set entity = 'sensor.1_fc_saarbrucken_tabelle' %}
+  ## Saison {{ state_attr(entity, 'season') }}/{{ (state_attr(entity, 'season') or 0) + 1 }}
+  | # | Team | Sp | TD | Pkt |
+  |---|---|---|---|---|
+  {% for row in state_attr(entity, 'table') or [] %}
+  | {{ row.position }} | {% if 'Saarbrücken' in row.team %}**{{ row.team }}**{% else %}{{ row.team }}{% endif %} | {{ row.matches }} | {{ row.goal_diff }} | **{{ row.points }}** |
+  {% endfor %}
+
+###############################################################################
+# 6) One-card glance style overview
+###############################################################################
+
+---
+type: glance
+title: FCS Kompakt
+show_state: true
+show_name: true
+entities:
+  - entity: sensor.1_fc_saarbrucken_tabellenplatz
+    name: Platz
+  - entity: sensor.1_fc_saarbrucken_punkte
+    name: Punkte
+  - entity: sensor.1_fc_saarbrucken_nachstes_spiel
+    name: Nächstes
+  - entity: sensor.1_fc_saarbrucken_letztes_spiel
+    name: Letztes
