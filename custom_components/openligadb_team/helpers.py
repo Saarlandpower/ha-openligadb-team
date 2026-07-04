@@ -17,6 +17,25 @@ def normalize_team_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
+def find_team_logo_in_matches(
+    matches: list[dict[str, Any]], team_name: str
+) -> str | None:
+    """Find the configured team's logo in a match list.
+
+    Cup competitions can have no table data at all, so the integration cannot
+    always rely on the table row to expose the team's icon. In that case we
+    inspect the fetched fixtures/results and pick the first matching home/away
+    logo for the configured club name.
+    """
+    wanted = normalize_team_name(team_name)
+    for match in matches:
+        if normalize_team_name(match.get("home") or "") == wanted:
+            return match.get("home_icon")
+        if normalize_team_name(match.get("away") or "") == wanted:
+            return match.get("away_icon")
+    return None
+
+
 def final_score(match: dict[str, Any]) -> str | None:
     """Extract the final result (resultTypeID 2 = Endergebnis) from a match."""
     for result in match.get("matchResults") or []:
