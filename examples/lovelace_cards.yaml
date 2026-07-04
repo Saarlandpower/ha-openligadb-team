@@ -142,3 +142,49 @@ entities:
     name: Nächstes
   - entity: sensor.1_fc_saarbrucken_letztes_spiel
     name: Letztes
+
+###############################################################################
+# 8) Next match with both team crests
+#
+# Shows the home and away crest side by side for the next match. Falls back
+# from the league "next match" sensor to the cup ("_2") sensor when the
+# league sensor has no match in its data window (e.g. during summer break).
+#
+# IMPORTANT: The built-in HA markdown card strips the "style" attribute from
+# HTML (via its sanitizer), so flexbox/CSS sizing on <div>/<img> is silently
+# ignored and images render at full native size. Use the "width"/"height"
+# HTML attributes directly instead - those are allowed through and control
+# the rendered size correctly. A plain HTML <table> is a reliable way to get
+# a side-by-side layout without relying on "style".
+###############################################################################
+
+---
+type: markdown
+title: Nächstes Spiel
+content: |
+  {% set league_state = states('sensor.1_fc_saarbrucken_nachstes_spiel') %}
+  {% set cup_state = states('sensor.1_fc_saarbrucken_nachstes_spiel_2') %}
+  {% if league_state not in ['unknown','unavailable','None'] %}
+  {% set ns_entity = 'sensor.1_fc_saarbrucken_nachstes_spiel' %}
+  {% elif cup_state not in ['unknown','unavailable','None'] %}
+  {% set ns_entity = 'sensor.1_fc_saarbrucken_nachstes_spiel_2' %}
+  {% else %}
+  {% set ns_entity = none %}
+  {% endif %}
+  {% if ns_entity %}
+  {% set home = state_attr(ns_entity, 'home') %}
+  {% set away = state_attr(ns_entity, 'away') %}
+  {% set home_icon = state_attr(ns_entity, 'home_icon') %}
+  {% set away_icon = state_attr(ns_entity, 'away_icon') %}
+  {% set league = state_attr(ns_entity, 'league') %}
+  {% set matchday = state_attr(ns_entity, 'matchday') %}
+  {% set kickoff = state_attr(ns_entity, 'date_local') %}
+  <table width="100%"><tr><td align="center" width="40%"><img src="{{ home_icon }}" width="70" height="70"><br>{{ home }}</td><td align="center" width="20%"><b>vs</b></td><td align="center" width="40%"><img src="{{ away_icon }}" width="70" height="70"><br>{{ away }}</td></tr></table>
+
+  **{{ league or '-' }}**{% if matchday %} · {{ matchday }}{% endif %}
+  {% if kickoff %}
+  Anstoß: **{{ as_timestamp(kickoff) | timestamp_custom('%d.%m.%Y %H:%M', true) }}**
+  {% endif %}
+  {% else %}
+  Aktuell kein bevorstehendes Spiel im Datenfenster (Liga & Pokal).
+  {% endif %}
