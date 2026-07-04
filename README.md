@@ -17,6 +17,7 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
   | Spiele | Alle Spiele der letzten 3 / nächsten 5 Wochen — **inkl. Pokalspiele** |
   | Tabelle | Komplette Ligatabelle als Attribut |
 - **Saisonwechsel automatisch** (Juli-Logik), in der Sommerpause wird die Abschlusstabelle der Vorsaison angezeigt
+- **Teamlogo inklusive**: Die Sensoren liefern das Vereinslogo als `entity_picture` und als Attribut `team_logo`
 - Mehrere Vereine/Ligen parallel möglich (je ein Config Entry)
 
 ## Installation (HACS)
@@ -45,6 +46,8 @@ Sobald du einen Verein hinzugefügt hast, legt die Integration pro Team **6 Sens
 
 Die Entity-IDs findest du unter **Entwicklerwerkzeuge → Zustände**, wenn du nach `openligadb`, deinem Vereinsnamen oder `tabelle` suchst.
 
+Zusätzlich stellen die Sensoren das Teamlogo direkt als **`entity_picture`** bereit. Damit kannst du es ohne Zusatz-API direkt in `picture-entity`, Mushroom-Karten oder anderen Lovelace-Karten verwenden.
+
 ## Beispiel: Tabellen-Card (Markdown)
 
 ```yaml
@@ -67,6 +70,7 @@ Fertige Beispiele für typische Karten findest du hier:
 Enthalten sind unter anderem:
 
 - kompakte Team-Übersicht
+- Logo-Karte für den Verein
 - Karte für das nächste Spiel
 - Karte für das letzte Spiel
 - Spielplan der kommenden und vergangenen Partien
