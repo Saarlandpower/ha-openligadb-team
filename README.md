@@ -32,6 +32,19 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 
 `bl1` (Bundesliga), `bl2` (2. Bundesliga), `bl3` (3. Liga), `dfb` (DFB-Pokal). Weitere unter [openligadb.de](https://www.openligadb.de).
 
+## Wie erstelle ich daraus eine Karte in Home Assistant?
+
+Sobald du einen Verein hinzugefügt hast, legt die Integration pro Team **6 Sensoren** an. Danach geht es in Lovelace so weiter:
+
+1. Dashboard öffnen
+2. Oben rechts auf **Bearbeiten**
+3. **Karte hinzufügen**
+4. **Manuell** auswählen
+5. Eines der YAML-Beispiele aus [`examples/lovelace_cards.yaml`](examples/lovelace_cards.yaml) einfügen
+6. Die Beispiel-Entities wie `sensor.1_fc_saarbrucken_tabelle` auf deine eigenen Entity-IDs anpassen
+
+Die Entity-IDs findest du unter **Entwicklerwerkzeuge → Zustände**, wenn du nach `openligadb`, deinem Vereinsnamen oder `tabelle` suchst.
+
 ## Beispiel: Tabellen-Card (Markdown)
 
 ```yaml
@@ -44,6 +57,20 @@ content: |
   | {{ t.position }} | {% if 'Saarbrücken' in t.team %}**{{ t.team }}**{% else %}{{ t.team }}{% endif %} | {{ t.matches }} | {{ t.goal_diff }} | **{{ t.points }}** |
   {% endfor %}
 ```
+
+## Weitere Lovelace-Beispiele
+
+Fertige Beispiele für typische Karten findest du hier:
+
+- [`examples/lovelace_cards.yaml`](examples/lovelace_cards.yaml)
+
+Enthalten sind unter anderem:
+
+- kompakte Team-Übersicht
+- Karte für das nächste Spiel
+- Karte für das letzte Spiel
+- Spielplan der kommenden und vergangenen Partien
+- Tabellenansicht als Markdown-Karte
 
 ## Hinweise
 
