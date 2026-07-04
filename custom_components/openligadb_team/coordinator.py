@@ -21,7 +21,12 @@ from .const import (
     WEEKS_PAST,
     current_season,
 )
-from .helpers import normalize_team_name, pick_next_and_last_match, slim_match
+from .helpers import (
+    find_team_logo_in_matches,
+    normalize_team_name,
+    pick_next_and_last_match,
+    slim_match,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -111,11 +116,15 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             key=lambda m: m["date_utc"] or "",
         )
         next_match, last_match = pick_next_and_last_match(slim_matches)
+        team_logo = (own_row or {}).get("icon") or find_team_logo_in_matches(
+            slim_matches, self.team_name
+        )
 
         return {
             "season": data_season,
             "table": slim_table,
             "team_row": own_row,
+            "team_logo": team_logo,
             "matches": slim_matches,
             "next_match": next_match,
             "last_match": last_match,
