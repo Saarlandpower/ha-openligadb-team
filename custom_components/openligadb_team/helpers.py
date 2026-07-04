@@ -1,8 +1,20 @@
 """Pure helpers used by the OpenLigaDB Team Tracker integration."""
 from __future__ import annotations
 
+import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
+
+def normalize_team_name(name: str) -> str:
+    """Normalize a team name for tolerant cross-competition comparisons.
+
+    OpenLigaDB formats the same club's name slightly differently between
+    competitions (e.g. "1. FC Saarbruecken" in the league vs "1.FC
+    Saarbruecken" in a cup), so comparisons strip everything but
+    letters/digits.
+    """
+    return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
 def final_score(match: dict[str, Any]) -> str | None:

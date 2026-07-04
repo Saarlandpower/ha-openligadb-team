@@ -21,7 +21,7 @@ from .const import (
     WEEKS_PAST,
     current_season,
 )
-from .helpers import pick_next_and_last_match, slim_match
+from .helpers import normalize_team_name, pick_next_and_last_match, slim_match
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +42,28 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.team_id: int = int(entry.data[CONF_TEAM_ID])
         self.team_name: str = entry.data[CONF_TEAM_NAME]
 
+    async def _async_resolve_team_id(self, season: int) -> int:
+        """Re-resolve the team id for this season by name.
+
+        OpenLigaDB occasionally assigns a new internal team id for a
+        competition when a new season starts (observed for cup competitions
+        such as the DFB-Pokal, where the id is not shared with the league).
+        Resolving by name on every refresh keeps matches flowing without the
+        user having to reconfigure the integration whenever OpenLigaDB does
+        this. Falls back to the originally configured id if the team can't
+        be found (e.g. season not yet published).
+        """
+        try:
+            teams = await self.api.get_available_teams(self.league_shortcut, season)
+        except OpenLigaDBError:
+            return self.team_id
+
+        wanted = normalize_team_name(self.team_name)
+        for team in teams:
+            if normalize_team_name(team.get("teamName", "")) == wanted:
+                return int(team["teamId"])
+        return self.team_id
+
     async def _async_update_data(self) -> dict[str, Any]:
         season = current_season()
         data_season = season
@@ -51,8 +73,13 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if not table:
                 data_season = season - 1
                 table = await self.api.get_table(self.league_shortcut, season - 1)
+
+            # Resolve against the actual current season, not data_season: cup
+            # competitions never have a table, so data_season would otherwise
+            # always drift back a year and re-resolve to a stale team id.
+            team_id = await self._async_resolve_team_id(season)
             matches = await self.api.get_matches_by_team(
-                self.team_id, WEEKS_PAST, WEEKS_FUTURE
+                team_id, WEEKS_PAST, WEEKS_FUTURE
             )
         except OpenLigaDBError as err:
             raise UpdateFailed(str(err)) from err
@@ -76,7 +103,7 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         ]
 
         own_row = next(
-            (row for row in slim_table if row["team_id"] == self.team_id), None
+            (row for row in slim_table if row["team_id"] == team_id), None
         )
 
         slim_matches = sorted(

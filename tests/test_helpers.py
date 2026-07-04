@@ -16,6 +16,7 @@ MODULE = module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 pick_next_and_last_match = MODULE.pick_next_and_last_match
 slim_match = MODULE.slim_match
+normalize_team_name = MODULE.normalize_team_name
 
 
 def test_slim_match_extracts_relevant_fields() -> None:
@@ -78,3 +79,15 @@ def test_pick_next_and_last_match_ignores_stale_unfinished_matches() -> None:
 
     assert next_match == matches[1]
     assert last_match == matches[2]
+
+
+def test_normalize_team_name_matches_across_competition_formatting() -> None:
+    """League and cup spellings of the same club should normalize equal."""
+    assert normalize_team_name("1. FC Saarbrücken") == normalize_team_name(
+        "1.FC Saarbrücken"
+    )
+
+
+def test_normalize_team_name_is_case_insensitive() -> None:
+    """Comparisons should not be sensitive to case."""
+    assert normalize_team_name("Hertha BSC") == normalize_team_name("HERTHA bsc")
