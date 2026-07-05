@@ -208,3 +208,87 @@ content: |
   {% else %}
   Aktuell kein bevorstehendes Spiel im Datenfenster (Liga & Pokal).
   {% endif %}
+
+###############################################################################
+# 9) League/cup balance entities cards with distinct icons
+#
+# Same "entity_picture always shows your own crest" issue as example #7
+# applies to "entities" cards too: without an explicit "icon:" per row,
+# every attribute row (Siege, Niederlagen, Tordifferenz, ...) would show
+# the same team crest. Set an "icon:" per row for something that actually
+# reflects what the row means.
+###############################################################################
+
+---
+type: entities
+title: 3. Liga Bilanz
+show_header_toggle: false
+entities:
+  - entity: sensor.1_fc_saarbrucken_tabellenplatz
+    name: Tabellenplatz
+    icon: mdi:podium
+  - entity: sensor.1_fc_saarbrucken_punkte
+    name: Punkte
+    icon: mdi:soccer
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz
+    attribute: matches
+    name: Spiele
+    icon: mdi:calendar-multiple
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz
+    attribute: won
+    name: Siege
+    icon: mdi:trophy
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz
+    attribute: draw
+    name: Unentschieden
+    icon: mdi:equal
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz
+    attribute: lost
+    name: Niederlagen
+    icon: mdi:close-circle-outline
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz
+    attribute: goal_diff
+    name: Tordifferenz
+    icon: mdi:swap-vertical-bold
+
+---
+type: entities
+title: FCS im DFB-Pokal
+show_header_toggle: false
+entities:
+  - entity: sensor.1_fc_saarbrucken_nachstes_spiel_2
+    name: Nächstes Pokalspiel
+    icon: mdi:calendar-arrow-right
+  - entity: sensor.1_fc_saarbrucken_letztes_spiel_2
+    name: Letztes Pokalspiel
+    icon: mdi:calendar-check
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz_2
+    attribute: matches
+    name: Pokalspiele
+    icon: mdi:calendar-multiple
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz_2
+    attribute: won
+    name: Siege
+    icon: mdi:trophy
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz_2
+    attribute: lost
+    name: Niederlagen
+    icon: mdi:close-circle-outline
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz_2
+    attribute: goals
+    name: Tore
+    icon: mdi:soccer
+  - type: attribute
+    entity: sensor.1_fc_saarbrucken_tabellenplatz_2
+    attribute: opponent_goals
+    name: Gegentore
+    icon: mdi:shield-alert-outline
