@@ -134,6 +134,14 @@ content: |
 
 ###############################################################################
 # 7) One-card glance style overview
+#
+# NOTE ON ICONS: every sensor in this integration exposes an "entity_picture"
+# attribute pointing at your OWN team's crest (used for the header logo,
+# picture-entity card, etc). The glance card prefers that picture over any
+# icon, so without an explicit "icon:" override every row here would show
+# the same team crest four times - including for "Nächstes"/"Letztes", which
+# looks like the opponent's crest is missing rather than just not applicable.
+# Set an explicit "icon:" per entity to get distinct, sensible glyphs instead.
 ###############################################################################
 
 ---
@@ -144,12 +152,16 @@ show_name: true
 entities:
   - entity: sensor.1_fc_saarbrucken_tabellenplatz
     name: Platz
+    icon: mdi:podium
   - entity: sensor.1_fc_saarbrucken_punkte
     name: Punkte
+    icon: mdi:soccer
   - entity: sensor.1_fc_saarbrucken_nachstes_spiel
     name: Nächstes
+    icon: mdi:calendar-arrow-right
   - entity: sensor.1_fc_saarbrucken_letztes_spiel
     name: Letztes
+    icon: mdi:calendar-check
 
 ###############################################################################
 # 8) Next match with both team crests
