@@ -19,42 +19,18 @@
 # table detection, so it silently falls back to raw text with visible "|"
 # characters. Fix: use `{% for x in list -%}` (note the trailing dash) to
 # strip that whitespace, so rows are joined directly by a single newline.
+#
+# NOTE ON ICONS: every sensor in this integration exposes an "entity_picture"
+# attribute pointing at your OWN team's crest. Any card type that can show a
+# picture (glance, entities, ...) prefers that picture over any icon, so
+# without an explicit "icon:" override every row for every sensor would show
+# the same team crest - including for things like "Nächstes"/"Letztes Spiel",
+# which reads as a missing opponent crest rather than just an unrelated row.
+# Set an explicit "icon:" per row to get distinct, sensible glyphs instead.
+# The examples below all follow this pattern.
 
 ###############################################################################
-# 1) Compact team overview
-###############################################################################
-
----
-type: vertical-stack
-cards:
-  - type: entities
-    title: 1. FC Saarbrücken
-    show_header_toggle: false
-    entities:
-      - entity: sensor.1_fc_saarbrucken_tabellenplatz
-        name: Tabellenplatz
-      - entity: sensor.1_fc_saarbrucken_punkte
-        name: Punkte
-      - entity: sensor.1_fc_saarbrucken_nachstes_spiel
-        name: Nächstes Spiel
-      - entity: sensor.1_fc_saarbrucken_letztes_spiel
-        name: Letztes Spiel
-  - type: markdown
-    content: |
-      {% set pos = states('sensor.1_fc_saarbrucken_tabellenplatz') %}
-      {% set pts = states('sensor.1_fc_saarbrucken_punkte') %}
-      {% set played = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'matches') %}
-      {% set won = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'won') %}
-      {% set draw = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'draw') %}
-      {% set lost = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'lost') %}
-      {% set gd = state_attr('sensor.1_fc_saarbrucken_tabellenplatz', 'goal_diff') %}
-      **Platz {{ pos }}** mit **{{ pts }} Punkten**
-
-      Bilanz: {{ won }}S / {{ draw }}U / {{ lost }}N
-      Spiele: {{ played }} | Tordifferenz: {{ gd }}
-
-###############################################################################
-# 2) Team logo / badge
+# 1) Team logo / badge
 ###############################################################################
 
 ---
@@ -65,7 +41,7 @@ show_state: false
 show_name: true
 
 ###############################################################################
-# 3) Next match card
+# 2) Next match card
 ###############################################################################
 
 ---
@@ -85,7 +61,7 @@ content: |
   **Ort:** {{ location or '-' }}
 
 ###############################################################################
-# 4) Last match card
+# 3) Last match card
 ###############################################################################
 
 ---
@@ -103,7 +79,7 @@ content: |
   **Datum:** {{ as_timestamp(kickoff) | timestamp_custom('%d.%m.%Y %H:%M', true) if kickoff else '-' }}
 
 ###############################################################################
-# 5) Match schedule list
+# 4) Match schedule list
 ###############################################################################
 
 ---
@@ -117,7 +93,7 @@ content: |
   {% endfor %}
 
 ###############################################################################
-# 6) League table (with team crests)
+# 5) League table (with team crests)
 ###############################################################################
 
 ---
@@ -133,15 +109,7 @@ content: |
   {% endfor %}
 
 ###############################################################################
-# 7) One-card glance style overview
-#
-# NOTE ON ICONS: every sensor in this integration exposes an "entity_picture"
-# attribute pointing at your OWN team's crest (used for the header logo,
-# picture-entity card, etc). The glance card prefers that picture over any
-# icon, so without an explicit "icon:" override every row here would show
-# the same team crest four times - including for "Nächstes"/"Letztes", which
-# looks like the opponent's crest is missing rather than just not applicable.
-# Set an explicit "icon:" per entity to get distinct, sensible glyphs instead.
+# 6) One-card glance style overview
 ###############################################################################
 
 ---
@@ -164,7 +132,7 @@ entities:
     icon: mdi:calendar-check
 
 ###############################################################################
-# 8) Next match with both team crests
+# 7) Next match with both team crests
 #
 # Shows the home and away crest side by side for the next match. Falls back
 # from the league "next match" sensor to the cup ("_2") sensor when the
@@ -210,13 +178,7 @@ content: |
   {% endif %}
 
 ###############################################################################
-# 9) League/cup balance entities cards with distinct icons
-#
-# Same "entity_picture always shows your own crest" issue as example #7
-# applies to "entities" cards too: without an explicit "icon:" per row,
-# every attribute row (Siege, Niederlagen, Tordifferenz, ...) would show
-# the same team crest. Set an "icon:" per row for something that actually
-# reflects what the row means.
+# 8) League/cup balance entities cards with distinct icons
 ###############################################################################
 
 ---
