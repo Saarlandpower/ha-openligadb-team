@@ -4,6 +4,8 @@ Verfolge deinen Verein aus **Bundesliga, 2. Bundesliga, 3. Liga, DFB-Pokal** und
 
 Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 
+![FCS Live Dashboard](screenshots/fcs-live-dashboard.png)
+
 ## Features
 
 - **Config Flow**: Liga-Kürzel eingeben (z.B. `bl3`), Verein per Dropdown wählen
