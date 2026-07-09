@@ -1,5 +1,13 @@
 # OpenLigaDB Team Tracker für Home Assistant
 
+![Release](https://img.shields.io/github/v/release/Saarlandpower/ha-openligadb-team?style=for-the-badge&label=RELEASE&color=blue)
+![HACS](https://img.shields.io/badge/HACS-CUSTOM-orange?style=for-the-badge)
+![Downloads](https://img.shields.io/github/downloads/Saarlandpower/ha-openligadb-team/total?style=for-the-badge&label=DOWNLOADS&color=green)
+![Stars](https://img.shields.io/github/stars/Saarlandpower/ha-openligadb-team?style=for-the-badge&label=STARS&color=blue&logo=github&logoColor=white)
+![Maintained](https://img.shields.io/badge/MAINTAINED-YES-green?style=for-the-badge)
+
+[![Open HACS repository on my Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Saarlandpower&repository=ha-openligadb-team&category=integration)
+
 Verfolge deinen Verein aus **Bundesliga, 2. Bundesliga, 3. Liga, DFB-Pokal** und allen anderen Ligen, die [OpenLigaDB](https://www.openligadb.de) abdeckt — inklusive Tabelle, nächstem Spiel, letztem Ergebnis und Spielplan. Kein API-Key nötig.
 
 Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
@@ -83,6 +91,14 @@ Enthalten sind unter anderem:
 - Datenquelle: [api.openligadb.de](https://api.openligadb.de) — Community-gepflegt, Live-Zwischenstände können je nach Liga verzögert sein
 - Update-Intervall: 15 Minuten
 - Dieses Projekt steht in keiner Verbindung zu OpenLigaDB, der DFL oder dem DFB
+
+## ☕ Support Development
+
+Wenn dir dieses Projekt gefällt und du die Weiterentwicklung unterstützen möchtest:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/saarmesh)
+
+Deine Unterstützung hilft bei Entwicklung, Tests, Bugfixes und neuen Features.
 
 ## Lizenz
 
