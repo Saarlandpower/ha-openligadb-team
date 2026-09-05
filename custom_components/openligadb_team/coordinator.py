@@ -23,6 +23,7 @@ from .const import (
 )
 from .helpers import (
     find_team_logo_in_matches,
+    is_womens_competition,
     normalize_team_name,
     pick_next_and_last_match,
     slim_match,
@@ -88,6 +89,19 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
         except OpenLigaDBError as err:
             raise UpdateFailed(str(err)) from err
+
+        # OpenLigaDB shares one teamId across a club's men's and women's
+        # squads, so getmatchesbyteamid mixes competitions of both genders.
+        # Keep only matches whose competition matches the category of the
+        # configured league (a men's bl1 sensor drops the women's Regionalliga
+        # fixtures, and vice versa) so next/last/matches stay on one squad.
+        configured_is_women = is_womens_competition(self.league_shortcut)
+        matches = [
+            m
+            for m in matches
+            if is_womens_competition(m.get("leagueShortcut"), m.get("leagueName"))
+            == configured_is_women
+        ]
 
         slim_table = [
             {

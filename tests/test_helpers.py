@@ -18,6 +18,7 @@ pick_next_and_last_match = MODULE.pick_next_and_last_match
 slim_match = MODULE.slim_match
 normalize_team_name = MODULE.normalize_team_name
 find_team_logo_in_matches = MODULE.find_team_logo_in_matches
+is_womens_competition = MODULE.is_womens_competition
 
 
 def test_slim_match_extracts_relevant_fields() -> None:
@@ -113,3 +114,47 @@ def test_find_team_logo_in_matches_returns_none_without_match() -> None:
     matches = [{"home": "A", "away": "B", "home_icon": "a.png", "away_icon": "b.png"}]
 
     assert find_team_logo_in_matches(matches, "C") is None
+
+
+def test_is_womens_competition_detects_marker_in_shortcut() -> None:
+    """A women's league shortcut like ``rlw-frauen`` should be detected."""
+    assert is_womens_competition("rlw-frauen") is True
+
+
+def test_is_womens_competition_detects_marker_in_name() -> None:
+    """The league name alone should be enough to detect a women's competition."""
+    assert is_womens_competition("xyz", "Regionalliga West Frauen") is True
+
+
+def test_is_womens_competition_false_for_mens_competitions() -> None:
+    """Men's league/cup/continental competitions must not match."""
+    assert is_womens_competition("bl1", "1. Fußball-Bundesliga") is False
+    assert is_womens_competition("dfb", "DFB Pokal") is False
+    assert is_womens_competition("ucl", "Champions League") is False
+
+
+def test_is_womens_competition_is_case_insensitive() -> None:
+    """Marker detection should not depend on casing."""
+    assert is_womens_competition("BL1-FRAUEN") is True
+
+
+def test_is_womens_competition_separates_shared_teamid_squads() -> None:
+    """A shared teamId (e.g. BVB is 7 for men and women) must split by league.
+
+    getmatchesbyteamid returns fixtures from every competition the id plays
+    in. Filtering a men's bl1 sensor keeps the men's fixtures and drops the
+    women's Regionalliga ones.
+    """
+    configured_is_women = is_womens_competition("bl1")
+    matches = [
+        {"leagueShortcut": "bl1", "leagueName": "1. Fußball-Bundesliga"},
+        {"leagueShortcut": "dfb", "leagueName": "DFB Pokal"},
+        {"leagueShortcut": "rlw-frauen", "leagueName": "Regionalliga West Frauen"},
+    ]
+    kept = [
+        m
+        for m in matches
+        if is_womens_competition(m["leagueShortcut"], m["leagueName"])
+        == configured_is_women
+    ]
+    assert [m["leagueShortcut"] for m in kept] == ["bl1", "dfb"]

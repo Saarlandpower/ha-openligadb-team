@@ -17,6 +17,26 @@ def normalize_team_name(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
+# Markers that identify a women's competition in OpenLigaDB league metadata.
+# OpenLigaDB shares a single teamId across a club's squads: Borussia Dortmund
+# is teamId 7 for both the men's Bundesliga side and the women's Regionalliga
+# side, so getmatchesbyteamid/7 returns both. We keep only matches whose
+# competition matches the gender/category of the configured league, otherwise
+# a women's Regionalliga fixture (played most weekends) becomes the "next
+# match" of a bl1 sensor. Clubs whose women's team has its own OpenLigaDB id
+# (e.g. Eintracht Frankfurt, SC Freiburg) never hit this, which is why the
+# problem only surfaced for the BVB.
+_WOMEN_MARKERS = ("frauen", "women", "damen", "féminin", "feminin")
+
+
+def is_womens_competition(
+    league_shortcut: str | None, league_name: str | None = None
+) -> bool:
+    """Heuristic: does this OpenLigaDB league belong to women's football?"""
+    blob = f"{league_shortcut or ''} {league_name or ''}".lower()
+    return any(marker in blob for marker in _WOMEN_MARKERS)
+
+
 def find_team_logo_in_matches(
     matches: list[dict[str, Any]], team_name: str
 ) -> str | None:
