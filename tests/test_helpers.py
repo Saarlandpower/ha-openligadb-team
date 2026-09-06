@@ -19,6 +19,7 @@ slim_match = MODULE.slim_match
 normalize_team_name = MODULE.normalize_team_name
 find_team_logo_in_matches = MODULE.find_team_logo_in_matches
 is_womens_competition = MODULE.is_womens_competition
+drop_placeholder_fixtures = MODULE.drop_placeholder_fixtures
 
 
 def test_slim_match_extracts_relevant_fields() -> None:
@@ -158,3 +159,29 @@ def test_is_womens_competition_separates_shared_teamid_squads() -> None:
         == configured_is_women
     ]
     assert [m["leagueShortcut"] for m in kept] == ["bl1", "dfb"]
+
+
+def test_drop_placeholder_fixtures_removes_same_time_cluster() -> None:
+    """A team cannot play two games at once; same-time clusters are dropped."""
+    matches = [
+        {"leagueId": 4946, "matchDateTimeUTC": "2026-09-08T21:00:00Z", "id": "real"},
+        {"leagueId": 5997, "matchDateTimeUTC": "2026-09-08T21:00:00Z", "id": "ph1"},
+        {"leagueId": 5997, "matchDateTimeUTC": "2026-09-08T21:00:00Z", "id": "ph2"},
+        {"leagueId": 5997, "matchDateTimeUTC": "2026-09-08T21:00:00Z", "id": "ph3"},
+    ]
+    assert [m["id"] for m in drop_placeholder_fixtures(matches)] == ["real"]
+
+
+def test_drop_placeholder_fixtures_keeps_distinct_times() -> None:
+    """Real fixtures at distinct kickoff times are all kept."""
+    matches = [
+        {"leagueId": 1, "matchDateTimeUTC": "2026-09-08T21:00:00Z", "id": "a"},
+        {"leagueId": 1, "matchDateTimeUTC": "2026-09-15T18:45:00Z", "id": "b"},
+    ]
+    assert [m["id"] for m in drop_placeholder_fixtures(matches)] == ["a", "b"]
+
+
+def test_drop_placeholder_fixtures_tolerates_missing_time() -> None:
+    """Matches without a timestamp are left untouched."""
+    matches = [{"leagueId": 1, "id": "x"}, {"leagueId": 1, "id": "y"}]
+    assert len(drop_placeholder_fixtures(matches)) == 2

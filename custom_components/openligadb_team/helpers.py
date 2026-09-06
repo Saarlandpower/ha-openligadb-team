@@ -37,6 +37,36 @@ def is_womens_competition(
     return any(marker in blob for marker in _WOMEN_MARKERS)
 
 
+def drop_placeholder_fixtures(
+    matches: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Remove OpenLigaDB placeholder draw dumps from a match list.
+
+    OpenLigaDB sometimes publishes a competition's draw as a placeholder: every
+    fixture of a team is stamped with one identical kickoff time (e.g. the
+    2026/27 Champions League league phase lists all eight opponents at the same
+    date/time in a parallel ``ucl2026`` competition, next to the correctly
+    scheduled ``ucl``). A team cannot play two matches simultaneously, so any
+    cluster of 2+ matches sharing the exact kickoff time within the same league
+    is bogus and dropped; the correctly scheduled fixture survives in the
+    properly dated competition.
+    """
+    counts: dict[tuple[Any, Any], int] = {}
+    for m in matches:
+        ts = m.get("matchDateTimeUTC")
+        if ts:
+            key = (m.get("leagueId"), ts)
+            counts[key] = counts.get(key, 0) + 1
+    return [
+        m
+        for m in matches
+        if not (
+            m.get("matchDateTimeUTC")
+            and counts.get((m.get("leagueId"), m.get("matchDateTimeUTC")), 0) > 1
+        )
+    ]
+
+
 def find_team_logo_in_matches(
     matches: list[dict[str, Any]], team_name: str
 ) -> str | None:

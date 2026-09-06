@@ -22,6 +22,7 @@ from .const import (
     current_season,
 )
 from .helpers import (
+    drop_placeholder_fixtures,
     find_team_logo_in_matches,
     is_womens_competition,
     normalize_team_name,
@@ -102,6 +103,9 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             if is_womens_competition(m.get("leagueShortcut"), m.get("leagueName"))
             == configured_is_women
         ]
+
+        # Drop OpenLigaDB placeholder draw dumps (see helper docstring).
+        matches = drop_placeholder_fixtures(matches)
 
         slim_table = [
             {
