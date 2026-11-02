@@ -46,3 +46,7 @@ class OpenLigaDBApi:
         return await self._get(
             f"getmatchesbyteamid/{team_id}/{weeks_past}/{weeks_future}"
         )
+
+    async def get_match(self, match_id: int) -> dict[str, Any]:
+        """Fetch a single match incl. goals (cheap, used while it is live)."""
+        return await self._get(f"getmatchdata/{match_id}")

@@ -29,6 +29,8 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 - **Saisonwechsel automatisch** (Juli-Logik), in der Sommerpause wird die Abschlusstabelle der Vorsaison angezeigt
 - **Teamlogo inklusive**: Die Sensoren liefern das Vereinslogo als `entity_picture` und als Attribut `team_logo`
 - Mehrere Vereine/Ligen parallel möglich (je ein Config Entry)
+- **Live-Modus**: Während eines Spiels wird jede Minute aktualisiert, sonst passt sich das Intervall automatisch an (siehe unten)
+- **Events für Automationen**: Anpfiff, Tore und Abpfiff lösen eigene Events aus
 
 ## Installation (HACS)
 
@@ -38,6 +40,67 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 4. Home Assistant neu starten
 5. Einstellungen → Geräte & Dienste → **Integration hinzufügen** → "OpenLigaDB Team Tracker"
 6. Liga-Kürzel eingeben (`bl3` für die 3. Liga), Verein wählen — fertig
+
+## Live-Modus
+
+Das Abfrageintervall richtet sich nach dem Spielplan deines Vereins:
+
+| Situation | Intervall |
+|---|---|
+| Spiel läuft | jede Minute (nur das laufende Spiel wird abgefragt, Tabelle alle 15 Min.) |
+| Anstoß in weniger als 15 Min. | Update genau zum Anstoß |
+| Spiel in den nächsten 12 h oder vor weniger als 6 h | alle 15 Minuten |
+| sonst | stündlich |
+
+Während eines Spiels haben die Spiele im Sensor *Nächstes Spiel* bzw. *Spiele* die Attribute `live: true` und `live_score` (z. B. `1:0`).
+
+## Events für Automationen
+
+| Event | Wann | Wichtige Daten |
+|---|---|---|
+| `openligadb_team_match_started` | Anpfiff | `home`, `away`, `competition`, `team_side` |
+| `openligadb_team_goal` | Tor | `score`, `minute`, `scorer`, `scoring_team`, `for_team`, `penalty`, `own_goal` |
+| `openligadb_team_match_ended` | Abpfiff | `score`, `result` (`won` / `draw` / `lost`) |
+
+Alle Events enthalten außerdem `team`, `entry_id`, `league_shortcut`, `match_id`, `matchday`, `score_home` und `score_away`. `for_team` ist `true`, wenn das Tor für deinen Verein fiel – auch bei Eigentoren des Gegners.
+
+Nach einem Neustart von Home Assistant werden bereits gefallene Tore nicht erneut gemeldet. Wie schnell ein Tor ankommt, hängt davon ab, wie schnell es bei OpenLigaDB eingetragen wird (Community-gepflegt, meist wenige Minuten).
+
+### Beispiel: Push-Nachricht bei einem Tor des eigenen Vereins
+
+```yaml
+automation:
+  - alias: "Tor für meinen Verein"
+    triggers:
+      - trigger: event
+        event_type: openligadb_team_goal
+        event_data:
+          team: "1. FC Saarbrücken"
+          for_team: true
+    actions:
+      - action: notify.mobile_app_mein_handy
+        data:
+          title: "⚽ TOR! {{ trigger.event.data.score }}"
+          message: >-
+            {{ trigger.event.data.scorer }} ({{ trigger.event.data.minute }}.)
+            – {{ trigger.event.data.home }} gegen {{ trigger.event.data.away }}
+```
+
+### Beispiel: Endergebnis melden
+
+```yaml
+automation:
+  - alias: "Abpfiff"
+    triggers:
+      - trigger: event
+        event_type: openligadb_team_match_ended
+    actions:
+      - action: notify.mobile_app_mein_handy
+        data:
+          title: >-
+            {{ {'won': 'Sieg! 🎉', 'draw': 'Unentschieden', 'lost': 'Niederlage'}[trigger.event.data.result] | default('Abpfiff') }}
+          message: "{{ trigger.event.data.home }} {{ trigger.event.data.score }} {{ trigger.event.data.away }}"
+```
 
 ## Gängige Liga-Kürzel
 

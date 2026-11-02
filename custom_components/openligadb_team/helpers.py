@@ -97,6 +97,7 @@ def final_score(match: dict[str, Any]) -> str | None:
 def slim_match(match: dict[str, Any]) -> dict[str, Any]:
     """Reduce an OpenLigaDB match object to dashboard friendly essentials."""
     return {
+        "match_id": match.get("matchID"),
         "date_utc": match.get("matchDateTimeUTC"),
         "date_local": match.get("matchDateTime"),
         "home": (match.get("team1") or {}).get("teamName"),
@@ -142,3 +143,238 @@ def pick_next_and_last_match(
     )
     last_match = next((match for match in reversed(matches) if match["finished"]), None)
     return next_match, last_match
+
+
+# --- Live mode ---------------------------------------------------------------
+
+# Polling cadence. Kept here (not in const.py) so the pure helpers stay
+# importable without the package and remain unit-testable on their own.
+LIVE_INTERVAL = timedelta(minutes=1)
+MATCHDAY_INTERVAL = timedelta(minutes=15)
+IDLE_INTERVAL = timedelta(minutes=60)
+
+# A match counts as live from kickoff until OpenLigaDB flags it finished, but
+# at most this long: extra time, penalties and a late "finished" flag fit in,
+# and a match whose flag is never set stops being polled every minute.
+LIVE_WINDOW = timedelta(hours=3, minutes=30)
+
+# How close a kickoff (or how recent a match) has to be for the 15-minute
+# matchday cadence instead of the hourly idle one.
+MATCHDAY_LOOKAHEAD = timedelta(hours=12)
+MATCHDAY_LOOKBEHIND = timedelta(hours=6)
+
+
+def is_live(match: dict[str, Any], now: datetime) -> bool:
+    """Is the match running right now (kicked off, not yet finished)?"""
+    if match.get("finished"):
+        return False
+    kickoff = parse_utc(match.get("date_utc"))
+    return kickoff is not None and kickoff <= now < kickoff + LIVE_WINDOW
+
+
+def compute_update_interval(
+    matches: list[dict[str, Any]], now: datetime
+) -> timedelta:
+    """Pick the next polling interval from the team's fixtures.
+
+    - a match is live: every minute
+    - kickoff is closer than the matchday interval: wake up right at kickoff
+    - a match within the next 12 h or in the last 6 h: every 15 minutes
+      (the table keeps changing while the rest of the matchday is played)
+    - otherwise: hourly
+    """
+    if any(is_live(m, now) for m in matches):
+        return LIVE_INTERVAL
+
+    busy = False
+    for m in matches:
+        kickoff = parse_utc(m.get("date_utc"))
+        if kickoff is None:
+            continue
+        delta = kickoff - now
+        if timedelta(0) < delta <= MATCHDAY_INTERVAL and not m.get("finished"):
+            return max(delta, LIVE_INTERVAL)
+        if -MATCHDAY_LOOKBEHIND <= delta <= MATCHDAY_LOOKAHEAD:
+            busy = True
+    return MATCHDAY_INTERVAL if busy else IDLE_INTERVAL
+
+
+def slim_goals(match: dict[str, Any]) -> list[dict[str, Any]]:
+    """Goals in order, each with the side that benefitted from it.
+
+    The side is derived from which running score went up, which stays correct
+    for own goals too (OpenLigaDB's scoringTeamId is not documented for them).
+    """
+    raw = sorted(
+        match.get("goals") or [],
+        key=lambda g: (
+            (g.get("scoreTeam1") or 0) + (g.get("scoreTeam2") or 0),
+            g.get("matchMinute") or 0,
+            g.get("goalID") or 0,
+        ),
+    )
+    goals: list[dict[str, Any]] = []
+    prev_home, prev_away = 0, 0
+    for g in raw:
+        home = g.get("scoreTeam1") or 0
+        away = g.get("scoreTeam2") or 0
+        if home > prev_home:
+            side = "home"
+        elif away > prev_away:
+            side = "away"
+        else:
+            side = None
+        goals.append(
+            {
+                "goal_id": g.get("goalID"),
+                "minute": g.get("matchMinute"),
+                "scorer": g.get("goalGetterName"),
+                "score_home": home,
+                "score_away": away,
+                "side": side,
+                "penalty": bool(g.get("isPenalty")),
+                "own_goal": bool(g.get("isOwnGoal")),
+                "overtime": bool(g.get("isOvertime")),
+            }
+        )
+        prev_home, prev_away = home, away
+    return goals
+
+
+def build_snapshot(
+    matches: list[dict[str, Any]], now: datetime
+) -> dict[Any, dict[str, Any]]:
+    """Per-match state used to detect kickoffs, goals and final whistles."""
+    snapshot: dict[Any, dict[str, Any]] = {}
+    for m in matches:
+        match_id = m.get("matchID")
+        if match_id is None:
+            continue
+        slim = slim_match(m)
+        kickoff = parse_utc(slim["date_utc"])
+        goals = slim_goals(m)
+        if goals:
+            score_home, score_away = goals[-1]["score_home"], goals[-1]["score_away"]
+        else:
+            score_home, score_away = 0, 0
+        final = slim["score"]
+        if slim["finished"] and final:
+            score_home, score_away = (int(x) for x in final.split(":"))
+        snapshot[match_id] = {
+            **slim,
+            "home_id": (m.get("team1") or {}).get("teamId"),
+            "away_id": (m.get("team2") or {}).get("teamId"),
+            "started": kickoff is not None and kickoff <= now,
+            "goals": goals,
+            "score_home": score_home,
+            "score_away": score_away,
+        }
+    return snapshot
+
+
+def team_side(match: dict[str, Any], team_id: int, team_name: str) -> str | None:
+    """Is the tracked team playing at home or away in this match?"""
+    wanted = normalize_team_name(team_name)
+    if match.get("home_id") == team_id or normalize_team_name(match.get("home") or "") == wanted:
+        return "home"
+    if match.get("away_id") == team_id or normalize_team_name(match.get("away") or "") == wanted:
+        return "away"
+    return None
+
+
+def diff_match_events(
+    old: dict[Any, dict[str, Any]] | None,
+    new: dict[Any, dict[str, Any]],
+    team_id: int,
+    team_name: str,
+) -> list[tuple[str, dict[str, Any]]]:
+    """Compare two snapshots and return (event_type, data) pairs.
+
+    Nothing fires on the very first snapshot or for a match seen for the first
+    time, so a Home Assistant restart in the middle of a match does not replay
+    its kickoff and goals. If a whole match slipped through between two polls
+    (scheduled before, finished now), only the final whistle is reported.
+    """
+    if old is None:
+        return []
+
+    events: list[tuple[str, dict[str, Any]]] = []
+    for match_id, cur in new.items():
+        prev = old.get(match_id)
+        if prev is None:
+            continue
+
+        side = team_side(cur, team_id, team_name)
+        base = {
+            "match_id": match_id,
+            "competition": cur.get("league"),
+            "matchday": cur.get("matchday"),
+            "home": cur.get("home"),
+            "away": cur.get("away"),
+            "team_side": side,
+            "score": f"{cur['score_home']}:{cur['score_away']}",
+            "score_home": cur["score_home"],
+            "score_away": cur["score_away"],
+        }
+        missed_whole_match = not prev["started"] and cur["finished"]
+
+        if not prev["started"] and cur["started"] and not cur["finished"]:
+            events.append(("match_started", dict(base)))
+
+        if not missed_whole_match:
+            seen = {g["goal_id"] for g in prev["goals"]}
+            for goal in cur["goals"]:
+                if goal["goal_id"] in seen:
+                    continue
+                for_team = None if side is None or goal["side"] is None else goal["side"] == side
+                events.append(
+                    (
+                        "goal",
+                        {
+                            **base,
+                            "score": f"{goal['score_home']}:{goal['score_away']}",
+                            "score_home": goal["score_home"],
+                            "score_away": goal["score_away"],
+                            "minute": goal["minute"],
+                            "scorer": goal["scorer"],
+                            "scoring_side": goal["side"],
+                            "scoring_team": cur.get(goal["side"]) if goal["side"] else None,
+                            "for_team": for_team,
+                            "penalty": goal["penalty"],
+                            "own_goal": goal["own_goal"],
+                            "overtime": goal["overtime"],
+                        },
+                    )
+                )
+
+        if not prev["finished"] and cur["finished"]:
+            result = None
+            if side is not None:
+                own = cur["score_home"] if side == "home" else cur["score_away"]
+                other = cur["score_away"] if side == "home" else cur["score_home"]
+                result = "won" if own > other else "lost" if own < other else "draw"
+            events.append(("match_ended", {**base, "result": result}))
+
+    return events
+
+
+def annotate_live(
+    matches: list[dict[str, Any]],
+    snapshot: dict[Any, dict[str, Any]],
+    now: datetime,
+) -> list[dict[str, Any]]:
+    """Add ``live`` and ``live_score`` to slim matches for the sensors."""
+    out = []
+    for m in matches:
+        live = is_live(m, now)
+        snap = snapshot.get(m.get("match_id")) or {}
+        out.append(
+            {
+                **m,
+                "live": live,
+                "live_score": f"{snap.get('score_home', 0)}:{snap.get('score_away', 0)}"
+                if live
+                else None,
+            }
+        )
+    return out

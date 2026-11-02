@@ -40,6 +40,7 @@ def test_slim_match_extracts_relevant_fields() -> None:
     }
 
     assert slim_match(match) == {
+        "match_id": None,
         "date_utc": "2026-06-12T18:00:00Z",
         "date_local": "2026-06-12T20:00:00",
         "home": "A",
