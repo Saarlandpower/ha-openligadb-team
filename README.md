@@ -32,14 +32,26 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 - **Live-Modus**: Während eines Spiels wird jede Minute aktualisiert, sonst passt sich das Intervall automatisch an (siehe unten)
 - **Events für Automationen**: Anpfiff, Tore und Abpfiff lösen eigene Events aus
 
-## Installation (HACS)
+## Installation
 
-1. HACS → Integrationen → ⋮ → **Custom Repositories**
-2. Repository: `https://github.com/Saarlandpower/ha-openligadb-team` — Kategorie: **Integration**
-3. **OpenLigaDB Team Tracker** installieren
-4. Home Assistant neu starten
-5. Einstellungen → Geräte & Dienste → **Integration hinzufügen** → "OpenLigaDB Team Tracker"
-6. Liga-Kürzel eingeben (`bl3` für die 3. Liga), Verein wählen — fertig
+### Home Assistant 2026.11 und neuer (Marketplace)
+
+1. Einstellungen → **Marketplace**
+2. Nach **OpenLigaDB Team Tracker** suchen und installieren
+3. Einstellungen → Geräte & Dienste → **Integration hinzufügen** → "OpenLigaDB Team Tracker"
+4. Liga-Kürzel eingeben (`bl3` für die 3. Liga), Verein wählen – fertig
+
+### Ältere Home-Assistant-Versionen (HACS)
+
+1. HACS öffnen und nach **OpenLigaDB Team Tracker** suchen
+2. Herunterladen und Home Assistant neu starten
+3. Einrichtung wie oben ab Schritt 3
+
+### Fallback: als eigenes Repository hinzufügen
+
+Falls die Integration in der Suche (noch) nicht auftaucht, kann sie direkt per Link hinzugefügt werden – im Marketplace über *Hinzufügen per Link*, in HACS über ⋮ → **Benutzerdefinierte Repositories**:
+
+`https://github.com/Saarlandpower/ha-openligadb-team` – Kategorie **Integration**
 
 ## Live-Modus
 
