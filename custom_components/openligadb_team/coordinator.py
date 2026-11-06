@@ -68,6 +68,12 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_full_refresh: datetime | None = None
         self._snapshot: dict[Any, dict[str, Any]] | None = None
 
+        # Events detected in the latest refresh; consumed by the event entity
+        # in its coordinator listener. Reset at the start of every refresh so
+        # a failed update never replays them.
+        self.pending_events: list[tuple[str, dict[str, Any]]] = []
+        self.last_goal: dict[str, Any] | None = None
+
     async def _async_resolve_team_id(self, season: int) -> int:
         """Re-resolve the team id for this season by name.
 
@@ -91,6 +97,7 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         return self.team_id
 
     async def _async_update_data(self) -> dict[str, Any]:
+        self.pending_events = []
         now = dt_util.utcnow()
         live_ids = [
             match_id
@@ -117,16 +124,22 @@ class OpenLigaDBCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         for event_type, payload in diff_match_events(
             self._snapshot, snapshot, self._resolved_team_id, self.team_name
         ):
-            _LOGGER.debug("Firing %s_%s: %s", DOMAIN, event_type, payload)
-            self.hass.bus.async_fire(
-                f"{DOMAIN}_{event_type}",
-                {
-                    "entry_id": self.entry.entry_id,
-                    "team": self.team_name,
-                    "league_shortcut": self.league_shortcut,
-                    **payload,
-                },
-            )
+            data = {
+                "entry_id": self.entry.entry_id,
+                "team": self.team_name,
+                "league_shortcut": self.league_shortcut,
+                **payload,
+            }
+            _LOGGER.debug("Firing %s_%s: %s", DOMAIN, event_type, data)
+            self.hass.bus.async_fire(f"{DOMAIN}_{event_type}", data)
+            self.pending_events.append((event_type, data))
+            if event_type == "goal":
+                self.last_goal = {
+                    k: data.get(k)
+                    for k in ("minute", "scorer", "score", "scoring_team", "for_team")
+                }
+            elif event_type == "match_started":
+                self.last_goal = None
         self._snapshot = snapshot
 
         data = self._build_data(snapshot, now)

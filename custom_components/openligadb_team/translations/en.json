@@ -26,12 +26,54 @@
   },
   "entity": {
     "sensor": {
-      "position": { "name": "Table position" },
-      "points": { "name": "Points" },
-      "next_match": { "name": "Next match" },
-      "last_match": { "name": "Last match" },
-      "matches": { "name": "Matches" },
-      "table": { "name": "Table" }
+      "position": {
+        "name": "Table position"
+      },
+      "points": {
+        "name": "Points"
+      },
+      "next_match": {
+        "name": "Next match"
+      },
+      "last_match": {
+        "name": "Last match"
+      },
+      "matches": {
+        "name": "Matches"
+      },
+      "table": {
+        "name": "Table"
+      },
+      "live_score": {
+        "name": "Live score"
+      }
+    },
+    "binary_sensor": {
+      "live": {
+        "name": "Match live"
+      },
+      "matchday_today": {
+        "name": "Matchday today"
+      }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Fixtures"
+      }
+    },
+    "event": {
+      "match_event": {
+        "name": "Match event",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "match_started": "Kickoff",
+              "goal": "Goal",
+              "match_ended": "Final whistle"
+            }
+          }
+        }
+      }
     }
   }
 }

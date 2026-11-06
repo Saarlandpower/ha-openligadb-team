@@ -25,3 +25,18 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run tests
         run: pytest tests/ -v
+
+  test-ha:
+    name: Tests against Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest-homeassistant-custom-component
+      - name: Run Home Assistant tests
+        run: pytest ha_tests/ -v -o asyncio_mode=auto

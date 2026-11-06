@@ -26,12 +26,54 @@
   },
   "entity": {
     "sensor": {
-      "position": { "name": "Tabellenplatz" },
-      "points": { "name": "Punkte" },
-      "next_match": { "name": "Nächstes Spiel" },
-      "last_match": { "name": "Letztes Spiel" },
-      "matches": { "name": "Spiele" },
-      "table": { "name": "Tabelle" }
+      "position": {
+        "name": "Tabellenplatz"
+      },
+      "points": {
+        "name": "Punkte"
+      },
+      "next_match": {
+        "name": "Nächstes Spiel"
+      },
+      "last_match": {
+        "name": "Letztes Spiel"
+      },
+      "matches": {
+        "name": "Spiele"
+      },
+      "table": {
+        "name": "Tabelle"
+      },
+      "live_score": {
+        "name": "Live-Spielstand"
+      }
+    },
+    "binary_sensor": {
+      "live": {
+        "name": "Spiel läuft"
+      },
+      "matchday_today": {
+        "name": "Heute Spieltag"
+      }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Spielplan"
+      }
+    },
+    "event": {
+      "match_event": {
+        "name": "Spielereignis",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "match_started": "Anpfiff",
+              "goal": "Tor",
+              "match_ended": "Abpfiff"
+            }
+          }
+        }
+      }
     }
   }
 }

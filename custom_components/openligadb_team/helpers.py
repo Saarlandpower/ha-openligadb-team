@@ -378,3 +378,67 @@ def annotate_live(
             }
         )
     return out
+
+
+# --- Calendar / matchday helpers ----------------------------------------------
+
+# Calendar entries span a regular match incl. half-time and stoppage time.
+MATCH_DURATION = timedelta(hours=2)
+
+
+def match_summary(match: dict[str, Any]) -> str:
+    """Calendar title, with the result once the match is finished."""
+    title = f"{match.get('home')} – {match.get('away')}"
+    if match.get("finished") and match.get("score"):
+        title += f" ({match['score']})"
+    return title
+
+
+def match_description(match: dict[str, Any]) -> str:
+    """Calendar description: competition and matchday."""
+    return " · ".join(
+        part for part in (match.get("league"), match.get("matchday")) if part
+    )
+
+
+def matches_in_range(
+    matches: list[dict[str, Any]], start: datetime, end: datetime
+) -> list[dict[str, Any]]:
+    """Matches whose calendar slot overlaps [start, end)."""
+    found = []
+    for m in matches:
+        kickoff = parse_utc(m.get("date_utc"))
+        if kickoff is None:
+            continue
+        if kickoff < end and kickoff + MATCH_DURATION > start:
+            found.append(m)
+    return found
+
+
+def current_or_next_match(
+    matches: list[dict[str, Any]], now: datetime
+) -> dict[str, Any] | None:
+    """The match running now, otherwise the next one (for the calendar state)."""
+    upcoming = [
+        (kickoff, m)
+        for m in matches
+        if (kickoff := parse_utc(m.get("date_utc"))) is not None
+        and kickoff + MATCH_DURATION > now
+    ]
+    return min(upcoming, key=lambda x: x[0])[1] if upcoming else None
+
+
+def has_match_on_day(
+    matches: list[dict[str, Any]], day_start: datetime, day_end: datetime
+) -> bool:
+    """Is there a kickoff between day_start and day_end (local day bounds)?"""
+    for m in matches:
+        kickoff = parse_utc(m.get("date_utc"))
+        if kickoff is not None and day_start <= kickoff < day_end:
+            return True
+    return False
+
+
+def live_match(matches: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The match currently flagged live by annotate_live, if any."""
+    return next((m for m in matches if m.get("live")), None)

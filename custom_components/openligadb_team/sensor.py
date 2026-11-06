@@ -6,12 +6,12 @@ from typing import Any
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import OpenLigaDBCoordinator
+from .entity import OpenLigaDBEntity
+from .helpers import live_match
 
 
 async def async_setup_entry(
@@ -29,37 +29,13 @@ async def async_setup_entry(
             LastMatchSensor(coordinator),
             MatchesSensor(coordinator),
             TableSensor(coordinator),
+            LiveScoreSensor(coordinator),
         ]
     )
 
 
-class OpenLigaDBBaseSensor(CoordinatorEntity[OpenLigaDBCoordinator], SensorEntity):
+class OpenLigaDBBaseSensor(OpenLigaDBEntity, SensorEntity):
     """Common base for all OpenLigaDB sensors."""
-
-    _attr_has_entity_name = True
-    _key: str = "base"
-
-    def __init__(self, coordinator: OpenLigaDBCoordinator) -> None:
-        super().__init__(coordinator)
-        entry = coordinator.entry
-        self._attr_unique_id = f"{entry.entry_id}_{self._key}"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name=coordinator.team_name,
-            manufacturer="OpenLigaDB",
-            model=coordinator.league_shortcut.upper(),
-            entry_type=DeviceEntryType.SERVICE,
-            configuration_url="https://www.openligadb.de",
-        )
-
-    @property
-    def _data(self) -> dict[str, Any]:
-        return self.coordinator.data or {}
-
-    @property
-    def entity_picture(self) -> str | None:
-        """Expose the team logo as the entity picture when available."""
-        return self._data.get("team_logo")
 
 
 class TablePositionSensor(OpenLigaDBBaseSensor):
@@ -187,4 +163,31 @@ class TableSensor(OpenLigaDBBaseSensor):
             "season": self._data.get("season"),
             "team_logo": self._data.get("team_logo"),
             "table": self._data.get("table") or [],
+        }
+
+
+class LiveScoreSensor(OpenLigaDBBaseSensor):
+    """Score of the match currently being played (unknown when none is live)."""
+
+    _key = "live_score"
+    _attr_translation_key = "live_score"
+    _attr_icon = "mdi:scoreboard-outline"
+
+    @property
+    def native_value(self) -> str | None:
+        m = live_match(self._data.get("matches") or [])
+        return m.get("live_score") if m else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        m = live_match(self._data.get("matches") or []) or {}
+        return {
+            "home": m.get("home"),
+            "away": m.get("away"),
+            "home_icon": m.get("home_icon"),
+            "away_icon": m.get("away_icon"),
+            "league": m.get("league"),
+            "matchday": m.get("matchday"),
+            "match_id": m.get("match_id"),
+            "last_goal": self.coordinator.last_goal if m else None,
         }

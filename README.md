@@ -30,7 +30,8 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 - **Teamlogo inklusive**: Die Sensoren liefern das Vereinslogo als `entity_picture` und als Attribut `team_logo`
 - Mehrere Vereine/Ligen parallel möglich (je ein Config Entry)
 - **Live-Modus**: Während eines Spiels wird jede Minute aktualisiert, sonst passt sich das Intervall automatisch an (siehe unten)
-- **Events für Automationen**: Anpfiff, Tore und Abpfiff lösen eigene Events aus
+- **Events für Automationen**: Anpfiff, Tore und Abpfiff lösen eigene Events aus – auch als Entität, direkt in der Automations-Oberfläche auswählbar
+- **Spielplan als Kalender**, **Live-Spielstand** und Binärsensoren *Spiel läuft* / *Heute Spieltag*
 
 ## Installation
 
@@ -52,6 +53,34 @@ Entstanden, weil ESPN/TeamTracker die 3. Liga nicht unterstützt. ⚽💙🖤
 Falls die Integration in der Suche (noch) nicht auftaucht, kann sie direkt per Link hinzugefügt werden – im Marketplace über *Hinzufügen per Link*, in HACS über ⋮ → **Benutzerdefinierte Repositories**:
 
 `https://github.com/Saarlandpower/ha-openligadb-team` – Kategorie **Integration**
+
+## Entitäten
+
+Pro Verein wird ein Gerät mit diesen Entitäten angelegt:
+
+| Entität | Typ | Inhalt |
+|---|---|---|
+| Tabellenplatz, Punkte | Sensor | aktueller Stand in der Liga |
+| Nächstes Spiel, Letztes Spiel | Sensor | Paarung bzw. Ergebnis, Details als Attribute |
+| Spiele, Tabelle | Sensor | kompletter Spielplan bzw. Tabelle als Attribut (für Karten) |
+| Live-Spielstand | Sensor | z. B. `1:0` während eines Spiels, sonst *unbekannt*; letztes Tor als Attribut |
+| Spiel läuft | Binärsensor | an, solange ein Spiel läuft |
+| Heute Spieltag | Binärsensor | an, wenn heute ein Anstoß ansteht |
+| Spielplan | Kalender | alle Spiele inkl. Pokal, mit Ergebnis nach Abpfiff |
+| Spielereignis | Event | Anpfiff, Tor, Abpfiff – als Trigger in der Automations-Oberfläche |
+
+### Ohne YAML: Automation über die Oberfläche
+
+Einstellungen → Automationen → Neue Automation → Auslöser **Entität → Status**, Entität *Spielereignis* auswählen. In der Bedingung lässt sich mit einer Template-Bedingung z. B. nur auf eigene Tore filtern:
+
+```yaml
+condition: template
+value_template: >-
+  {{ trigger.to_state.attributes.event_type == 'goal'
+     and trigger.to_state.attributes.for_team }}
+```
+
+Der Kalender eignet sich für Erinnerungen: Auslöser **Kalender** → *Spielplan* → *Beginn des Ereignisses* mit Versatz `-00:30:00` meldet sich 30 Minuten vor Anstoß.
 
 ## Live-Modus
 

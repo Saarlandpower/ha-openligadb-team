@@ -174,3 +174,47 @@ def test_annotate_live_adds_live_score() -> None:
     (out,) = H.annotate_live([m], s, now)
     assert out["live"] is True
     assert out["live_score"] == "1:1"
+
+
+# --- calendar / matchday ------------------------------------------------------
+
+def cal_match(minutes_from_now_kickoff, now, **kw):
+    return {"date_utc": (now + timedelta(minutes=minutes_from_now_kickoff)).isoformat(),
+            "home": "A", "away": "B", "finished": False, "score": None,
+            "league": "3. Liga", "matchday": "12. Spieltag", **kw}
+
+
+def test_match_summary_adds_result_when_finished() -> None:
+    now = KICKOFF
+    assert H.match_summary(cal_match(0, now)) == "A – B"
+    assert H.match_summary(cal_match(0, now, finished=True, score="2:1")) == "A – B (2:1)"
+    assert H.match_description(cal_match(0, now)) == "3. Liga · 12. Spieltag"
+
+
+def test_matches_in_range_includes_overlapping_running_match() -> None:
+    now = KICKOFF
+    running = cal_match(-60, now)
+    later = cal_match(24 * 60, now)
+    assert H.matches_in_range([running, later], now, now + timedelta(hours=1)) == [running]
+
+
+def test_current_or_next_prefers_running_match() -> None:
+    now = KICKOFF
+    old = cal_match(-5 * 60, now)
+    running = cal_match(-30, now)
+    nxt = cal_match(3 * 24 * 60, now)
+    assert H.current_or_next_match([old, running, nxt], now) is running
+    assert H.current_or_next_match([old, nxt], now) is nxt
+    assert H.current_or_next_match([old], now) is None
+
+
+def test_has_match_on_day() -> None:
+    day = datetime(2026, 11, 7, tzinfo=timezone.utc)
+    assert H.has_match_on_day([cal_match(0, KICKOFF)], day, day + timedelta(days=1))
+    assert not H.has_match_on_day([cal_match(24 * 60, KICKOFF)], day, day + timedelta(days=1))
+
+
+def test_live_match_picks_flagged_match() -> None:
+    a, b = {"live": False}, {"live": True}
+    assert H.live_match([a, b]) is b
+    assert H.live_match([a]) is None
