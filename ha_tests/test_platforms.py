@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from freezegun.api import FrozenDateTimeFactory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import entity_registry as er
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -116,19 +116,23 @@ async def test_full_match(hass: HomeAssistant, freezer: FrozenDateTimeFactory) -
 
         goal_bus = async_capture_events(hass, "openligadb_team_goal")
         changes: list[str] = []
-        hass.bus.async_listen(
-            "state_changed",
-            lambda e: changes.append(e.data["new_state"].attributes.get("event_type"))
-            if e.data["entity_id"] == ids["match_event"] and e.data.get("new_state") else None,
-        )
+
+        @callback
+        def _record(event: Event) -> None:
+            # @callback: runs synchronously in the event loop, like automation
+            # triggers do. A plain function would go to the executor and the
+            # recorded order would become nondeterministic.
+            if event.data["entity_id"] == ids["match_event"] and event.data.get("new_state"):
+                changes.append(event.data["new_state"].attributes.get("event_type"))
+
+        hass.bus.async_listen("state_changed", _record)
 
         # kickoff + early goal in the same poll: both must reach the entity
         FakeApi.state["goals"] = [(1, 0, 1, "H. Kane")]
         await _tick(hass, freezer, KICKOFF + timedelta(minutes=2))
         await _tick(hass, freezer, KICKOFF + timedelta(minutes=17))  # coordinator was on 15/60 min
         print("changes", changes)
-        assert "match_started" in changes and "goal" in changes
-        assert changes.index("match_started") < changes.index("goal")
+        assert changes == ["match_started", "goal"]
         assert hass.states.get(ids["live"]).state == "on"
         assert hass.states.get(ids["live_score"]).state == "1:0"
         assert hass.states.get(ids["live_score"]).attributes["last_goal"]["scorer"] == "H. Kane"
