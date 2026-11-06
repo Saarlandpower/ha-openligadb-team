@@ -39,4 +39,4 @@ jobs:
           python -m pip install --upgrade pip
           pip install pytest-homeassistant-custom-component
       - name: Run Home Assistant tests
-        run: pytest ha_tests/ -v -o asyncio_mode=auto
+        run: python -m pytest ha_tests/ -v -o asyncio_mode=auto
